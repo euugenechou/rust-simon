@@ -32,7 +32,10 @@ impl SimonCipher {
 
         for i in 0..72 {
             let t = ct[1];
-            ct[1] = ct[0] ^ (ct[1].rotate_right(1) & ct[1].rotate_right(2)) ^ self.rk[i];
+            ct[1] = ct[0]
+                ^ (ct[1].rotate_left(1) & ct[1].rotate_left(8))
+                ^ ct[1].rotate_left(2)
+                ^ self.rk[i];
             ct[0] = t;
         }
 
@@ -46,10 +49,29 @@ impl SimonCipher {
 
         for i in (0..72).rev() {
             let t = pt[0];
-            pt[0] = pt[1] ^ (pt[0].rotate_left(1) & pt[0].rotate_left(2)) ^ self.rk[i];
+            pt[0] = pt[1]
+                ^ (pt[0].rotate_left(1) & pt[0].rotate_left(8))
+                ^ pt[0].rotate_left(2)
+                ^ self.rk[i];
             pt[1] = t
         }
 
         pt
     }
+}
+
+#[test]
+fn matches_test_vector() {
+    let key: [u64; 4] = [
+        0x0706050403020100,
+        0x0f0e0d0c0b0a0908,
+        0x1716151413121110,
+        0x1f1e1d1c1b1a1918,
+    ];
+
+    let pt: [u64; 2] = [0x6d69732061207369, 0x74206e69206d6f6f];
+    let cipher = SimonCipher::new(&key);
+    let ct = cipher.encrypt(&pt);
+
+    assert_eq!(ct, [0x3bf72a87efe7b868, 0x8d2b5579afc8a3a0]);
 }
